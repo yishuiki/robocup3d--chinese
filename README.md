@@ -1,4 +1,4 @@
-# 999FC Portugal Codebase <br> for RoboCup 3D Soccer Simulation League
+# FC Portugal Codebase <br> for RoboCup 3D Soccer Simulation League
 
 ![](https://s5.gifyu.com/images/Siov6.gif)
 
