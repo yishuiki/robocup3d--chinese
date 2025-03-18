@@ -1,97 +1,104 @@
-from agent.Agent import Agent
-from itertools import count
-from scripts.commons.Script import Script
-from typing import List
-from world.commons.Draw import Draw
-
+from agent.Agent import Agent  # 导入代理类
+from itertools import count  # 导入 itertools 模块用于无限循环计数
+from scripts.commons.Script import Script  # 导入脚本类
+from typing import List  # 导入类型注解模块
+from world.commons.Draw import Draw  # 导入绘图工具类
 class Radio_Localization():
-    def __init__(self,script:Script) -> None:
-        self.script = script
+    def __init__(self, script: Script) -> None:
+        """
+        初始化无线电定位类。
+        :param script: 脚本对象，用于获取相关参数。
+        """
+        self.script = script  # 保存脚本对象
+    def draw_objects(self, p: Agent, pos, is_down, was_seen, last_update, is_self=False):
+        """
+        绘制对象（球员或球）的状态。
+        :param p: 代理对象。
+        :param pos: 对象的位置。
+        :param is_down: 对象是否倒地。
+        :param was_seen: 对象是否被看到。
+        :param last_update: 对象最后更新的时间。
+        :param is_self: 是否为自身。
+        """
+        w = p.world  # 获取世界对象
+        me = w.robot.loc_head_position  # 获取自身头部位置
 
-    def draw_objects(self, p:Agent, pos, is_down, was_seen, last_update, is_self=False):
-        w = p.world
-        me = w.robot.loc_head_position
+        # 获取绘图对象，确保始终覆盖之前的绘图
+        d: Draw = self.script.players[0].world.draw
 
-        # get draw object from same player to always overwrite previous drawing
-        # could also use team channel but with this approach we could draw for both teams
-        d:Draw = self.script.players[0].world.draw 
+        # 判断对象是否为当前或最近更新
+        is_current = last_update > w.time_local_ms - w.VISUALSTEP_MS  # 是否为当前或上一个时间步更新
+        is_recent = last_update >= w.time_local_ms - 120  # 是否在过去 0.12 秒内更新
 
-        # VISUALSTEP_MS is the time it takes to get a visual update
-        is_current = last_update > w.time_local_ms - w.VISUALSTEP_MS
-
-        # 0.12s is the time it takes to do a full broadcast with all positions if every group is completely visible
-        # here we use >= instead of > because the radio message comes with a delay of 20ms
-        is_recent = last_update >= w.time_local_ms - 120
-
+        # 根据对象的状态选择颜色
         if is_current and was_seen:
-            c = d.Color.green_light  # I've seen this object in the current or previous time step
+            c = d.Color.green_light  # 当前或上一个时间步看到的对象
         elif is_recent and was_seen:
-            c = d.Color.green        # I've seen this object in the last 0.12s
+            c = d.Color.green  # 最近 0.12 秒内看到的对象
         elif is_current:
-            c = d.Color.yellow       # I've heard about this object in the current or previous time step (and it was not seen in the same period)
+            c = d.Color.yellow  # 当前或上一个时间步通过无线电听到的对象
         elif is_recent:
-            c = d.Color.yellow_light # I've heard about this object in the last 0.12s (the last available info was not obtained from vision)
+            c = d.Color.yellow_light  # 最近 0.12 秒内通过无线电听到的对象
         else:
-            c = d.Color.red          # I haven't seen or heard about this object in the last 0.12s
+            c = d.Color.red  # 超过 0.12 秒未看到或听到的对象
 
+        # 绘制自身状态
         if is_self:
             if w.robot.radio_fallen_state:
-                d.annotation(me, "Fallen (radio)", d.Color.yellow, "objects", False)   # I heard I've fallen (but I missed the last 2 visual steps)
+                d.annotation(me, "Fallen (radio)", d.Color.yellow, "objects", False)  # 通过无线电听到自己倒地
             elif w.robot.loc_head_z < 0.3:
-                d.annotation(me, "Fallen (internal)", d.Color.white, "objects", False) # I have detected I've fallen
-            d.sphere(me, 0.06, c, "objects", False)
-        else:
-            if is_down:
-                d.annotation((me[:2]+pos[:2])/2,"Fallen",d.Color.white,"objects",False)
-            d.arrow(me, pos, 0.1, 3, c, "objects", False)
+                d.annotation(me, "Fallen (internal)", d.Color.white, "objects", False)  # 自身检测到倒地
+            d.sphere(me, 0.06, c, "objects", False)  # 绘 ‌‍
+    def draw(self, p: Agent):
+        """
+        绘制所有对象的状态。
+        :param p: 代理对象。
+        """
+        w = p.world  # 获取世界对象
+        others = w.teammates + w.opponents  # 获取队友和对手
 
-
-    def draw(self,p:Agent):
-        w = p.world
-        others = w.teammates + w.opponents
-
-        #----------------------------------------------------------- draw other players
-
+        # 绘制其他球员
         for o in others:
-            if o.is_self or o.state_last_update==0: # do not draw self or never before seen players
+            if o.is_self or o.state_last_update == 0:  # 不绘制自身或从未见过的球员
                 continue
 
-            pos = o.state_abs_pos
-            is_down = o.state_fallen
-            # 3D head position means head is visible, 2D means some body parts are visible but not the head, or the head position comes from radio
-            is_3D = pos is not None and len(pos)==3 
+            pos = o.state_abs_pos  # 获取球员位置
+            is_down = o.state_fallen  # 获取球员是否倒地
+            is_3D = pos is not None and len(pos) == 3  # 判断位置是否为 3D（头部可见）
 
-            self.draw_objects(p, pos, is_down, is_3D, o.state_last_update)
+            self.draw_objects(p, pos, is_down, is_3D, o.state_last_update)  # 绘制球员状态
 
-        #----------------------------------------------------------- draw self
-
+        # 绘制自身状态
         is_pos_from_vision = w.robot.loc_head_position_last_update == w.robot.loc_last_update
         self.draw_objects(p, None, None, is_pos_from_vision, w.robot.loc_head_position_last_update, True)
 
-        #----------------------------------------------------------- draw ball and flush drawings
-
+        # 绘制球的状态
         self.draw_objects(p, w.ball_abs_pos, False, w.is_ball_abs_pos_from_vision, w.ball_abs_pos_last_update)
+
+        # 刷新绘图
         self.script.players[0].world.draw.flush("objects")
-        
-
     def execute(self):
-        a = self.script.args
+        """
+        执行无线电定位和可视化。
+        """
+        a = self.script.args  # 获取脚本参数
 
-        # Args: Server IP, Agent Port, Monitor Port, Uniform No., Robot Type, Team Name, Enable Log, Enable Draw
-        self.script.batch_create(Agent, ((a.i,a.p,a.m,u,a.t,       False,u==1) for u in range(1,12)))
-        self.script.batch_create(Agent, ((a.i,a.p,a.m,u,"Opponent",False,False) for u in range(1,12)))
-        players : List[Agent] = self.script.players
+        # 创建球员代理（包括队友和对手）
+        self.script.batch_create(Agent, ((a.i, a.p, a.m, u, a.t, False, u == 1) for u in range(1, 12)))
+        self.script.batch_create(Agent, ((a.i, a.p, a.m, u, "Opponent", False, False) for u in range(1, 12)))
+        players: List[Agent] = self.script.players  # 获取所有球员
 
-        # Beam opponents
-        beam_pos = [(-(i//2)-3,(i%2*2-1)*(i//2+1),0) for i in range(11)]
-        self.script.batch_commit_beam( beam_pos, slice(11,None) )
+        # 设置对手的初始位置
+        beam_pos = [(-(i // 2) - 3, (i % 2 * 2 - 1) * (i // 2 + 1), 0) for i in range(11)]
+        self.script.batch_commit_beam(beam_pos, slice(11, None))
         print("\nPress ctrl+c to return.")
 
-        # Execute
+        # 主循环
         for j in count():
-            self.script.batch_execute_agent( slice(11) )        # run our agents (think and send)
-            self.script.batch_commit_and_send( slice(11,None) ) # run their agents (don't think, just send)
+            self.script.batch_execute_agent(slice(11))  # 执行队友的行为
+            self.script.batch_commit_and_send(slice(11, None))  # 提交并发送对手的行为
 
-            self.draw(players[j//15%11])                     # draw knowledge, iterate through our team, 15 time steps per player
-            self.script.batch_receive(slice(11))             # receive & update our team's world state
-            self.script.batch_receive(slice(11,None), False) # receive & don't update opponent's world state (to save cpu resources)
+            # 绘制球员和球的状态，每 15 个时间步绘制一个球员
+            self.draw(players[j // 15 % 11])
+            self.script.batch_receive(slice(11))  # 接收并更新队友的世界状态
+            self.script.batch_receive(slice(11, None), False)  # 接收但不更新对手的世界状态（节省 CPU 资源）

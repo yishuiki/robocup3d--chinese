@@ -11,27 +11,27 @@ class UI():
     @staticmethod
     def read_particle(prompt, str_options, dtype=str, interval=[-inf,inf]):
         ''' 
-        Read particle from user from a given dtype or from a str_options list
+        从用户处读取一个值，该值可以是给定的 dtype 或 str_options 列表中的一个选项
 
-        Parameters
+        参数
         ----------
         prompt : `str`
-            prompt to show user before reading input
+            在读取输入之前显示给用户的提示
         str_options : `list`
-            list of str options (in addition to dtype if dtype is not str)
+            字符串选项列表（除了 dtype 之外）
         dtype : `class`
-            if dtype is str, then user must choose a value from str_options, otherwise it can also send a dtype value
+            如果 dtype 是 str，则用户必须从 str_options 中选择一个值，否则也可以发送一个 dtype 值
         interval : `list`
-            [>=min,<max] interval for numeric dtypes
+            [>=min,<max] 区间，用于数值类型的 dtype
         
-        Returns
+        返回值
         -------
-        choice : `int` or dtype
-            index of str_options (int) or value (dtype)
+        choice : `int` 或 dtype
+            str_options 的索引（int）或值（dtype）
         is_str_option : `bool`
-            True if `choice` is an index from str_options
+            如果 `choice` 是 str_options 的索引，则为 True
         '''
-        # Check if user has no choice
+        # 检查用户是否有选择
         if dtype is str and len(str_options) == 1:
             print(prompt, str_options[0], sep="")
             return 0, True
@@ -57,11 +57,11 @@ class UI():
     @staticmethod
     def read_int(prompt, min, max):
         ''' 
-        Read int from user in a given interval
-        :param prompt: prompt to show user before reading input
-        :param min: minimum input (inclusive)
-        :param max: maximum input (exclusive)
-        :return: choice
+        从用户处读取一个整数，该整数在给定区间内
+        :param prompt: 在读取输入之前显示给用户的提示
+        :param min: 最小输入值（包含）
+        :param max: 最大输入值（不包含）
+        :return: 用户选择的整数
         '''
         while True:
             inp = input(prompt)
@@ -75,52 +75,51 @@ class UI():
     @staticmethod
     def print_table(data, titles=None, alignment=None, cols_width=None, cols_per_title=None, margins=None, numbering=None, prompt=None):
         '''
-        Print table
+        打印表格
         
-        Parameters
+        参数
         ----------
         data : `list`
-            list of columns, where each column is a list of items
+            列表的列表，每一列是一个项目列表
         titles : `list`
-            list of titles for each column, default is `None` (no titles)
+            每列的标题列表，默认为 `None`（不显示标题）
         alignment : `list`
-            list of alignments per column (excluding titles), default is `None` (left alignment for all cols)
+            每列的对齐方式（不包括标题），默认为 `None`（所有列左对齐）
         cols_width : `list`
-            list of widths per column, default is `None` (fit to content)
-            Positive values indicate a fixed column width
-            Zero indicates that the column will fit its content
+            每列的宽度列表，默认为 `None`（根据内容调整宽度）
+            正值表示固定的列宽
+            零表示该列将根据其内容调整宽度
         cols_per_title : `list`
-            maximum number of subcolumns per title, default is `None` (1 subcolumn per title)
+            每个标题的最大子列数，默认为 `None`（每个标题一个子列）
         margins : `list`
-            number of added leading and trailing spaces per column, default is `None` (margin=2 for all columns)
+            每列的前后空白字符数，默认为 `None`（每列的空白字符数为2）
         numbering : `list`
-            list of booleans per columns, indicating whether to assign numbers to each option
+            每列的布尔值列表，指示是否为每个选项分配编号
         prompt : `str`
-            the prompt string, if given, is printed after the table before reading input
+            如果提供，将在表格打印后提示用户输入
 
-        Returns
+        返回值
         -------
         index : `int`
-            returns global index of selected item (relative to table)
+            返回所选项目的全局索引（相对于表格）
         col_index : `int`
-            returns local index of selected item (relative to column)
+            返回所选项目的局部索引（相对于列）
         column : `int`
-            returns number of column of selected item (starts at 0)
-        * if `numbering` or `prompt` are `None`, `None` is returned
+            返回所选项目的列号（从0开始）
+        * 如果 `numbering` 或 `prompt` 为 `None`，则返回 `None`
         
-
-        Example
+        示例
         -------
         titles = ["Name","Age"]
-        data = [[John,Graciete], [30,50]]
-        alignment = ["<","^"]               # 1st column is left-aligned, 2nd is centered
-        cols_width = [10,5]                # 1st column's width=10, 2nd column's width=5
+        data = [["John","Graciete"], [30,50]]
+        alignment = ["<","^"]               # 第一列左对齐，第二列居中对齐
+        cols_width = [10,5]                # 第一列宽度为10，第二列宽度为5
         margins = [3,3]                    
-        numbering = [True,False]           # prints: [0-John,1-Graciete][30,50]
+        numbering = [True,False]           # 打印：[0-John,1-Graciete][30,50]
         prompt = "Choose a person:"
         '''
         
-        #--------------------------------------------- parameters
+        #--------------------------------------------- 参数
         cols_no = len(data)
 
         if alignment is None:
@@ -138,8 +137,8 @@ class UI():
         if margins is None:
             margins = [2]*cols_no
 
-        # Fit column to content + margin, if required
-        subcol = [] # subcolumn length and widths
+        # 根据内容调整列宽（如果需要）
+        subcol = [] # 子列长度和宽度
         for i in range(cols_no):
             subcol.append([[],[]])
             if cols_width[i] == 0:
@@ -147,20 +146,20 @@ class UI():
                 if cols_per_title is None or cols_per_title[i] < 2:
                     cols_width[i] = max([len(str(item))+numbering_width for item in data[i]]) + margins[i]*2
                 else:
-                    subcol[i][0] = math.ceil(len(data[i])/cols_per_title[i]) # subcolumn maximum length
-                    cols_per_title[i] = math.ceil(len(data[i])/subcol[i][0]) # reduce number of columns as needed
-                    cols_width[i] = margins[i]*(1+cols_per_title[i]) - (1 if numbering[i] else 0) # remove one if numbering, same as when printing
+                    subcol[i][0] = math.ceil(len(data[i])/cols_per_title[i]) # 子列最大长度
+                    cols_per_title[i] = math.ceil(len(data[i])/subcol[i][0]) # 根据需要减少列数
+                    cols_width[i] = margins[i]*(1+cols_per_title[i]) - (1 if numbering[i] else 0) # 如果有编号，则移除一个，与打印时相同
                     for j in range(cols_per_title[i]):
                         subcol_data_width = max([len(str(item))+numbering_width for item in data[i][j*subcol[i][0]:j*subcol[i][0]+subcol[i][0]]])
-                        cols_width[i] += subcol_data_width     # add subcolumn data width to column width
-                        subcol[i][1].append(subcol_data_width) # save subcolumn data width
+                        cols_width[i] += subcol_data_width     # 将子列数据宽度添加到列宽
+                        subcol[i][1].append(subcol_data_width) # 保存子列数据宽度
                         
-                if titles is not None: # expand to acomodate titles if needed
+                if titles is not None: # 如果需要，扩展以容纳标题
                     cols_width[i] = max(cols_width[i], len(titles[i]) + margins[i]*2  )
 
         if any_numbering:
             no_of_items=0
-            cumulative_item_per_col=[0] # useful for getting the local index
+            cumulative_item_per_col=[0] # 用于获取局部索引
             for i in range(cols_no):
                 assert type(data[i]) == list, "In function 'print_table', 'data' must be a list of lists!"
 
@@ -171,7 +170,7 @@ class UI():
 
         table_width = sum(cols_width)+cols_no-1
 
-        #--------------------------------------------- col titles
+        #--------------------------------------------- 列标题
         print(f'{"="*table_width}')
         if titles is not None:
             for i in range(cols_no):
@@ -181,28 +180,28 @@ class UI():
                 print(f'{"-"*cols_width[i]}', end='+' if i < cols_no - 1 else '')
             print()
 
-        #--------------------------------------------- merge subcolumns
+        #--------------------------------------------- 合并子列
         if cols_per_title is not None:
             for i,col in enumerate(data):
                 if cols_per_title[i] < 2:
                     continue
-                for k in range(subcol[i][0]): # create merged items
+                for k in range(subcol[i][0]): # 创建合并后的项目
                     col[k] = (" "*margins[i]).join( f'{col[item]:{alignment[i]}{subcol[i][1][subcol_idx]}}' 
                                                     for subcol_idx, item in enumerate(range(k,len(col),subcol[i][0])) )
-                del col[subcol[i][0]:] # delete repeated items
+                del col[subcol[i][0]:] # 删除重复的项目
         
-        #--------------------------------------------- col items
+        #--------------------------------------------- 列项目
         for line in zip_longest(*data):       
             for i,item in enumerate(line):
-                l_margin = margins[i]-1 if numbering[i] else margins[i] # adjust margins when there are numbered options
-                item = "" if item is None else f'{" "*l_margin}{item}{" "*margins[i]}' # add margins
+                l_margin = margins[i]-1 if numbering[i] else margins[i] # 如果有编号，则调整边距
+                item = "" if item is None else f'{" "*l_margin}{item}{" "*margins[i]}' # 添加边距
                 print(f'{item:{alignment[i]}{cols_width[i]}}', end='')
                 if i < cols_no - 1:
                     print(end='|')
             print(end="\n")
         print(f'{"="*table_width}')
 
-        #--------------------------------------------- prompt
+        #--------------------------------------------- 提示
         if prompt is None:
             return None
 
@@ -222,28 +221,28 @@ class UI():
     @staticmethod
     def print_list(data, numbering=True, prompt=None, divider=" | ", alignment="<", min_per_col=6):
         '''
-        Print list - prints list, using as many columns as possible
+        打印列表 - 使用尽可能多的列打印列表
         
-        Parameters
+        参数
         ----------
         data : `list`
-            list of items
+            项目列表
         numbering : `bool`
-            assigns number to each option
+            为每个选项分配编号
         prompt : `str`
-            the prompt string, if given, is printed after the table before reading input
+            如果提供，将在表格打印后提示用户输入
         divider : `str`
-            string that divides columns
+            分隔列的字符串
         alignment : `str`
-            f-string style alignment ( '<', '>', '^' )
+            f-string 风格的对齐方式 ( '<', '>', '^' )
         min_per_col : int
-            avoid splitting columns with fewer items
+            避免拆分项目数较少的列
         
-        Returns
+        返回值
         -------
         item : `int`, item
-            returns tuple with global index of selected item and the item object,
-            or `None` (if `numbering` or `prompt` are `None`)
+            返回所选项目的全局索引和项目对象，
+            或 `None`（如果 `numbering` 或 `prompt` 为 `None`）
 
         '''
         
@@ -253,15 +252,15 @@ class UI():
         items = []
         items_len = []
 
-        #--------------------------------------------- Add numbers, margins and divider
+        #--------------------------------------------- 添加编号、边距和分隔符
         for i in range(data_size):
             number = f"{i}-" if numbering else ""
             items.append( f"{divider}{number}{data[i]}" )
             items_len.append( len(items[-1]) )
 
-        max_cols = np.clip((WIDTH+len(divider)) // min(items_len),1,math.ceil(data_size/max(min_per_col,1))) # width + len(divider) because it is not needed in last col
+        max_cols = np.clip((WIDTH+len(divider)) // min(items_len),1,math.ceil(data_size/max(min_per_col,1))) # 宽度 + len(divider)，因为最后一列不需要分隔符
 
-        #--------------------------------------------- Check maximum number of columns, considering content width (min:1)
+        #--------------------------------------------- 检查最大列数，考虑内容宽度（最小值为1）
         for i in range(max_cols,0,-1):
             cols_width = []
             cols_items = []
@@ -278,20 +277,20 @@ class UI():
                 break
         table_width -= len(divider)
         
-        #--------------------------------------------- Print columns
+        #--------------------------------------------- 打印列
         print("="*table_width)
         for row in range(math.ceil(data_size / i)):
             for col in range(i):
-                content = cols_items[col][row] if len(cols_items[col]) > row else divider # print divider when there are no items
+                content = cols_items[col][row] if len(cols_items[col]) > row else divider # 如果没有项目，则打印分隔符
                 if col == 0:
                     l = len(divider)
-                    print(end=f"{content[l:]:{alignment}{cols_width[col]-l}}")  # remove divider from 1st col
+                    print(end=f"{content[l:]:{alignment}{cols_width[col]-l}}")  # 从第一列中移除分隔符
                 else:
                     print(end=f"{content    :{alignment}{cols_width[col]  }}") 
             print()  
         print("="*table_width)
 
-        #--------------------------------------------- Prompt
+        #--------------------------------------------- 提示
         if prompt is None:
             return None
 

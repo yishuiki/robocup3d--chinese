@@ -1,28 +1,34 @@
 import numpy as np
 
-#Note: When other robot is seen, all previous body part positions are deleted
-# E.g. we see 5 body parts at 0 seconds -> body_parts_cart_rel_pos contains 5 elements
-#      we see 1 body part  at 1 seconds -> body_parts_cart_rel_pos contains 1 element
-
-
+# 注意：当看到其他机器人时，之前的所有身体部位位置信息将被删除。
+# 例如：
+#   - 在 0 秒时看到 5 个身体部位 -> body_parts_cart_rel_pos 包含 5 个元素
+#   - 在 1 秒时看到 1 个身体部位 -> body_parts_cart_rel_pos 包含 1 个元素
 class Other_Robot():
+    """
+    表示机器人足球比赛中其他机器人（队友或对手）的状态和信息。
+    """
     def __init__(self, unum, is_teammate) -> None:
-        self.unum = unum                # convenient variable to indicate uniform number (same as other robot's index + 1)
-        self.is_self = False            # convenient flag to indicate if this robot is self
-        self.is_teammate = is_teammate  # convenient variable to indicate if this robot is from our team
-        self.is_visible = False # True if this robot was seen in the last message from the server (it doesn't mean we know its absolute location)
-        self.body_parts_cart_rel_pos = dict()  # cartesian relative position of the robot's visible body parts
-        self.body_parts_sph_rel_pos = dict()   # spherical relative position of the robot's visible body parts
-        self.vel_filter = 0.3                  # EMA filter coefficient applied to self.state_filtered_velocity
-        self.vel_decay  = 0.95                 # velocity decay at every vision cycle (neutralized if velocity is updated)
+        """
+        初始化 Other_Robot 类。
+        :param unum: 球衣号码（方便标识机器人，等于其他机器人的索引 + 1）。
+        :param is_teammate: 是否为队友。
+        """
+        self.unum = unum  # 球衣号码
+        self.is_self = False  # 标志，表示该机器人是否为自身
+        self.is_teammate = is_teammate  # 标志，表示该机器人是否为队友
+        self.is_visible = False  # 如果该机器人在最近一次从服务器收到的消息中被看到，则为 True（但这并不意味着我们知道它的绝对位置）
+        self.body_parts_cart_rel_pos = dict()  # 机器人可见身体部位的笛卡尔相对位置
+        self.body_parts_sph_rel_pos = dict()  # 机器人可见身体部位的球面相对位置
+        self.vel_filter = 0.3  # 应用于 self.state_filtered_velocity 的 EMA 滤波系数
+        self.vel_decay = 0.95  # 每个视觉周期的速度衰减系数（如果速度被更新，则中和）
 
-
-        # State variables: these are computed when this robot is visible and when the original robot is able to self-locate
-        self.state_fallen = False              # true if the robot is lying down  (updated when head is visible)
-        self.state_last_update = 0             # World.time_local_ms when the state was last updated
-        self.state_horizontal_dist = 0         # horizontal head distance if head is visible, otherwise, average horizontal distance of visible body parts (the distance is updated by vision or radio when state_abs_pos gets a new value, but also when the other player is not visible, by assuming its last position)
-        self.state_abs_pos = None              # 3D head position if head is visible, otherwise, 2D average position of visible body parts, or, 2D radio head position
-        self.state_orientation = 0             # orientation based on pair of lower arms or feet, or average of both (WARNING: may be older than state_last_update)  
-        self.state_ground_area = None          # (pt_2d,radius) projection of player area on ground (circle), not precise if farther than 3m (for performance), useful for obstacle avoidance when it falls
-        self.state_body_parts_abs_pos = dict() # 3D absolute position of each body part
-        self.state_filtered_velocity = np.zeros(3) # 3D filtered velocity (m/s) (if the head is not visible, the 2D part is updated and v.z decays)
+        # 状态变量：当该机器人可见且原始机器人能够自我定位时，这些变量会被计算
+        self.state_fallen = False  # 如果机器人躺下，则为 True（当头部可见时更新）
+        self.state_last_update = 0  # 状态最后一次更新时的世界时间（单位：毫秒）
+        self.state_horizontal_dist = 0  # 如果头部可见，则为头部的水平距离；否则，为可见身体部位的平均水平距离（该距离通过视觉或无线电更新，即使其他机器人不可见，也会假设其最后位置）
+        self.state_abs_pos = None  # 如果头部可见，则为头部的 3D 位置；否则，为可见身体部位的 2D 平均位置，或者为 2D 无线电头部位置
+        self.state_orientation = 0  # 基于一对下臂或脚的朝向，或者两者的平均值（警告：可能比 state_last_update 更旧）
+        self.state_ground_area = None  # 玩家区域在地面上的投影（圆形），如果距离超过 3 米则不精确（为了性能考虑），在机器人倒地时用于障碍物避让
+        self.state_body_parts_abs_pos = dict()  # 每个身体部位的 3D 绝对位置
+        self.state_filtered_velocity = np.zeros(3)  # 3D 滤波速度（单位：米/秒）（如果头部不可见，则更新 2D 部分，v.z 衰减）
